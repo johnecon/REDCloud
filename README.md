@@ -1,0 +1,6 @@
+# REDCloud (MSc Thesis)
+Requirements engineering projects are inherently cooperative, requiring many stakeholders to coordinate their efforts to create a requirement specification. Conventional tools for file sharing and version tracking are not optimized for such projects. Version control has always been a tricky task, and even many computer science students have serious troubles with the concepts involved. So how can we ask domain experts to be proficient users of a VCS?
+
+The goal of this thesis is to create a tool for requirements engineers where they can share, structure and keep track of their models in a collaborative environment. The evolution of a project should be visualized using activity diagrams allowing team members to plan and document their workflow. Since REDCloud functions as an extension to the Requirements Editor (RED) software tool that is used at the course 02264 - Requirements Engineering taught at DTU, an interface allowing the connection between these two should be designed.
+
+For more details on this project, please check the [docServer](https://github.com/johnecon/REDCloud/tree/master/docServer) for the code and [Collaborative Requirements Engineering with REDCloud.pdf](https://github.com/johnecon/REDCloud/blob/master/Collaborative%20Requirements%20Engineering%20with%20REDCloud.pdf) for the report.
