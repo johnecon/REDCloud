@@ -1,4 +1,6 @@
-# INSTALLATION STEPS #
+This django project is deployed using nginx and uwsgi with fab and docker.
+
+# Installation Steps #
 ```
 cd docServer
 pip install -r requirements.txt
@@ -6,13 +8,13 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-# CONNECT TO DATABASE #
+# Connect to Database #
 * ssh at redcloud server
 ```
 psql -h localhost -p 5430 -d postgres -U postgres --password
 ```
 
-# DEPLOYMENT STEPS #
+# Deployment Steps #
 * install [openvpn](https://itswiki.compute.dtu.dk/index.php/OpenVPN)
 * connect to vpn using
 ```
@@ -31,22 +33,22 @@ fab prod deploy
 fab prod deploy migrations
 ```
 
-# DUMP DATABASE INTO A FILE #
+# Dump Database #
 ```
 python manage.py dumpdata auth.User docServer --indent=4 --natural --natural-primary --natural-foreign -e contenttypes -e docServer.UserProfile > init.json
 ```
 
-# RESET DATA #
+# Reset Data #
 ```
 python manage.py flush
 ```
 
-# LOAD DATA FROM FILE #
+# Load Data From File #
 ```
 python manage.py loaddata init.json
 ```
 
-# MIGRATE DATABASE #
+# Migrate Database #
 * change a model
 * generate migration files
 ```
@@ -57,12 +59,7 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-# ROLLBACK MIGRATION #
-```
-python manage.py docServer migrate {migration_file_name}
-```
-
-# RUN INTEGRATION TESTS #
+# Run Integration Tests #
 * all tests:
 ```
 python manage.py test bdd_tests --testrunner=django_behave.runner.DjangoBehaveTestSuiteRunner
@@ -72,35 +69,35 @@ python manage.py test bdd_tests --testrunner=django_behave.runner.DjangoBehaveTe
 python manage.py test bdd_tests --testrunner=django_behave.runner.DjangoBehaveTestSuiteRunner --behave_tags @wip
 ```
 
-# CHECK ERROR LOGS #
+# Check Error Logs #
 ```
 tail -f /var/log/supervisor/app-uwsgi-stderr---supervisor-UcTG0o.log
 tail -f /var/log/nginx/error.log
 ```
 
-# RESTART UWSGI #
+# Restart UWSGI #
 ```
 sudo supervisorctl
 restart app-uwsgi
 ```
 
-# DEPLOY SERVER CONTAINER #
+# Deploy Server Container #
 Use the ServerDockerfile
 ```
 fab prod build
 fab prod push:{message}
 ```
 
-# STRESS TESTING #
+# Stress testing #
 ```
 ab -k -c 100 -n 1000 -A admin:admin redcloud.compute.dtu.dk/projects/3/load
 ```
 
-# BACKUPS #
+# Backups #
 [https://itswiki.compute.dtu.dk/index.php/Backup_on_Linux_/_OSX](https://itswiki.compute.dtu.dk/index.php/Backup_on_Linux_/_OSX)
 
-# PRODUCTION #
+# Production #
 [redcloud.compute.dtu.dk](redcloud.compute.dtu.dk)
 
-# SUPPORT #
+# Support #
 [johnnyecon@gmail.com](johnnyecon@gmail.com)
