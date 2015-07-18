@@ -2,7 +2,6 @@ This django project is deployed using nginx and uwsgi with fab and docker.
 
 # Installation Steps #
 ```
-cd docServer
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
@@ -30,7 +29,7 @@ fab prod deploy
 ```
 * deploy with migrations using
 ```
-fab prod deploy migrations
+fab prod deploy migrate
 ```
 
 # Dump Database #
