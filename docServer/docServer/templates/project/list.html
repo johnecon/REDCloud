@@ -1,0 +1,35 @@
+{% extends 'site_base.html' %}
+{% load bootstrap_pagination %}
+{% block body %}
+{#    <p>#}
+{#        <a href={% url 'resource_add' %} target="_parent">#}
+{#            <button type="button" class="btn btn-primary">#}
+{#                <span class="glyphicon glyphicon-plus">#}
+{#                </span> Add New#}
+{#            </button>#}
+{#        </a>#}
+{#    </p>#}
+    {% if object_list.count == 0 %}
+        No {{ object_name }} found
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th>{{ object_name }}</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for object in object_list %}
+                    <tr>
+                        <td>
+                            <a href="{{ object.get_absolute_url }}">{{ object }}</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% bootstrap_paginate page_obj %}
+        </div>
+    {% endif %}
+{% endblock %}

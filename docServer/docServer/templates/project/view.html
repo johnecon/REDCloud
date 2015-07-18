@@ -1,0 +1,497 @@
+{% extends 'site_base.html' %}
+{% load staticfiles %}
+{% load my_tags %}
+
+{% load require %}
+{% block page_script %}
+    {% require_module 'project' %}
+    <script>
+        var users = [];
+        {% for c in project.contributors.all %}
+            users.push({"name": "{{ c }}", is_authenticated: "{{ c.is_authenticated }}"});
+        {% endfor %}
+        var current_user = { "username": "{{ user }}", "token": "{{ user.token }}"};
+    </script>
+{% endblock %}
+
+{% block extra_style %}
+    <link href="{% static 'css/graph.css' %}" rel="stylesheet">
+    <link href="{% static 'css/jquery-ui.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/colorpicker.css' %}" rel="stylesheet">
+    <link href="{% static 'ajaxuploader/css/fileuploader.css' %}" rel="stylesheet">
+    <script>
+        var projectTitle = "{{ project }}";
+        var GREY_BLUE = '#2e3e42';
+        var GREY_YELLOW = '#4f4b29';
+        var key = 0;
+        function getKey() {
+            key++;
+            return "custom_" + key;
+        }
+        function insertFileInput(element, hname, hvalue){
+            var hiddenInput;
+            hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = hname;
+            hiddenInput.value = hvalue;
+            element.html(hiddenInput);
+        }
+        function updateFileName(element, hvalue){
+            var para, hiddenInput;
+            para = jQuery(jQuery(element).siblings('.file-name')[0]);
+            hiddenInput = document.createElement('a');
+            hiddenInput.innerHTML = hvalue;
+            para.html(hiddenInput);
+        }
+        var ACTION_CATEGORY_PREFIX = "Action-";
+        var FUTURE_TENSE = 0;
+        var PRESENT_TENSE = 1;
+        var PAST_TENSE = 2;
+        var OPERATION_TYPE_INTERNAL = 'In';
+        var OPERATION_TYPE_IMPORT = 'Im';
+        var OPERATION_TYPE_EXPORT = 'Ex';
+        var RESOURCE_PK_NAME_SEPARATOR = "***_***";
+        var loadUploader = function (element) {
+            jQuery(function(){
+                var uploader = new qq.FileUploader({
+                    action: "{% url 'project_file_upload' project.id %}",
+                    element: element,
+                    multiple: false,
+                    onComplete: function(id, fileName, responseJSON) {
+                        if(responseJSON.success) {
+                            insertFileInput(jQuery(jQuery(element).siblings('.file-input')[0]), "resource", responseJSON.resource_pk + RESOURCE_PK_NAME_SEPARATOR + responseJSON.path);
+                            updateFileName(element, fileName);
+                            var fileUploadSuccessMessage = jQuery('.file-upload-success-message');
+                            fileUploadSuccessMessage.fadeIn();
+                            setTimeout(function () {
+                                fileUploadSuccessMessage.fadeOut()
+                            }, 3000);
+                        } else {
+                            alert("upload failed!");
+                        }
+                    },
+                    params: {
+                        'csrf_token': '{{ csrf_token }}',
+                        'csrf_name': 'csrfmiddlewaretoken',
+                        'csrf_xname': 'X-CSRFToken'
+                    }
+                });
+            });
+        }
+    </script>
+{% endblock %}
+
+{% block body_base %}
+        <div style="padding-left:15%">
+            <div class="row">
+                <div class="col-md-2 btn btn-warning" id="save-failure" style="display: none;"></div>
+            </div>
+        </div>
+        <div style="width:100%; white-space:nowrap;">
+        <span style="display: inline-block; vertical-align: top; padding-left: 10px; padding-top: 1%; padding-bottom: 1%; height:93vh; width:14%">
+            <div id="myPalette" style="border: solid 1px gray; height: 40%"></div>
+            <div id="myOverview" style="border: solid 1px gray; height: 60%"></div>
+        </span>
+
+        <span style="display: inline-block; vertical-align: top; padding-top: 1%; padding-bottom: 1%; padding-right: 10px; height:93vh; width:86%">
+            <div style="position: relative; height:100%">
+                <div id="currentFile" style="border: solid 1px black;">{{ project }}</div>
+                <div id="menuBar" style="border-left: solid 1px black; border-right: solid 1px black;">
+                    <ul id="nav">
+                        <li>
+                            <a href="#" id="FileMenu">File</a>
+                            <ul>
+                                <li>
+                                    <a href="#" id="save">Save</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="load">Load</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="export-to-json">Export to JSON</a>
+                                </li>
+                                <li>
+                                    <a href="#">
+                                        <div class="fileinput">
+                                            <input type="file" id="load-file" name="upload"/>
+                                            Open
+                                        </div>
+                                     </a>
+                                </li>
+                                <li>
+                                    <a href="#" id="makeSvg">Render as svg</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li><a id="MenuOptions" href="#">Options</a>
+                            <ul>
+                                <li><a href="#" id="grid-click">
+                                    <input id="grid" type="checkbox" name="options" value="grid">Grid</a>
+                                </li>
+                                <li><a href="#" id="snap-click">
+                                    <input id="snap" type="checkbox" name="options" value="snap">Snapping</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#" id="distribute-vertically">
+                                <img class="align-icon" src="{% static 'images/distribute-vertical-gaps.png' %}"/>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="align-left" href="#" onclick="myDiagram.commandHandler.alignLeft()">
+                                <img class="align-icon" src="{% static 'images/align-horizontal-left.png' %}"/>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="align-right" href="#" onclick="myDiagram.commandHandler.alignRight()">
+                                <img class="align-icon" src="{% static 'images/align-horizontal-right.png' %}"/>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="align-top" href="#" onclick="myDiagram.commandHandler.alignTop()">
+                                <img class="align-icon" src="{% static 'images/align-vertical-top.png' %}"/>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="align-bottom" href="#" onclick="myDiagram.commandHandler.alignBottom()">
+                                <img class="align-icon" src="{% static 'images/align-vertical-bottom.png' %}"/>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="align-center-x" href="#" onclick="myDiagram.commandHandler.alignCenterX()">
+                                <img class="align-icon" src="{% static 'images/align-horizontal-center.png' %}"/>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="align-center-y" href="#" onclick="myDiagram.commandHandler.alignCenterY()">
+                                <img class="align-icon" src="{% static 'images/align-vertical-center.png' %}"/>
+                            </a>
+                        </li>
+                        <li class="refresh-btn"><a href="#" id='refresh'>Refresh</a>
+                        </li>
+                    </ul>
+                </div>
+                <div id="myDiagram" style="border: solid 1px black; height:calc(100% - 53px)"></div>
+                <div id="infoBoxHolder">
+                </div>
+                <div id="contextMenu">
+                    <ul>
+                        <li id="createAction"><a href="#" class="swimlane-cxmenu">Create Action</a></li>
+                        <li id="createObject"><a href="#" class="swimlane-cxmenu">Create Artifact</a></li>
+                        <li id="comment"><a href="#" class="swimlane-cxmenu">Comment</a></li>
+                        <li id="editSwimLane"><a href="#" class="swimlane-cxmenu">Edit</a></li>
+                        <li id="selectAllNodes"><a href="#" class="swimlane-cxmenu">Select All Nodes</a></li>
+                        <li id="importObject"><a href="#" class="swimlane-cxmenu">Import Artifact</a></li>
+                        <li id="importTemplate"><a href="#" class="swimlane-cxmenu">Import Template</a></li>
+                        <li id="editComment"><a href="#" class="comment-cxmenu">Edit</a></li>
+                        <li id="deleteComment"><a href="#" class="comment-cxmenu">Delete</a></li>
+                        <li id="undoDeleteComment"><a href="#" class="comment-deleted-cxmenu">Undo Delete</a></li>
+                        <li id="archiveObject"><a href="#" class="object-present-cxmenu object-future-cxmenu">Archive</a></li>
+                        <li id="object-download"><a target="_self" href="#" class="object-cxmenu">Download</a></li>
+                        <li id="deleteObject"><a href="#" class="object-future-cxmenu">Delete</a></li>
+                        <li id="undoDeleteObject"><a href="#" class="object-deleted-cxmenu">Undo Delete</a></li>
+                        <li id="editObject"><a href="#" class="object-cxmenu object-empty-cxmenu">Edit</a></li>
+                        <li id="exportObjects"><a href="#" class="object-not-exported-cxmenu objects-cxmenu">Export</a></li>
+                        <li id="synchronize"><a href="#" class="objects-actions-cxmenu">Synchronize</a></li>
+                        <li id="realizeObject"><a href="#" class="object-future-cxmenu">Realize</a></li>
+                        <li id="archiveAction"><a href="#" class="action-present-cxmenu action-future-cxmenu">Archive</a></li>
+                        <li id="undoDeleteAction"><a href="#" class="action-deleted-cxmenu">Undo Delete</a></li>
+                        <li id="deleteAction"><a href="#" class="action-future-cxmenu">Delete</a></li>
+                        <li id="editAction"><a href="#" class="action-cxmenu">Edit</a></li>
+                        <li id="realizeAction"><a href="#" class="action-future-cxmenu">Realize</a></li>
+                    </ul>
+                </div>
+                {% verbatim %}
+                <form class="form" id="createObjectModal" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-8 form-group">
+                            <label for="new-object-name-input">Name</label>
+                        <textarea id="new-object-name-input" class="form-control" type="text"
+                               name="name" required></textarea>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label for="create-object-tense-input">Tense</label>
+                            <select id="create-object-tense-input" name="tense" class="form-control">
+                                <option value="0">Future</option>
+                                <option value="1">Present</option>
+                                <option value="2">Past</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-object-description-input">Description</label>
+                        <textarea class="form-control" id="new-object-description-input"
+                               placeholder="Description"
+                               rows="4" name="description"></textarea>
+                    </div>
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="public"> Public
+                        </label>
+                    </div>
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="start"> Create Start Node
+                        </label>
+                    </div>
+                    <div class="form-group file-form">
+                        <div  class="file-upload-success-message alert alert-success" role="alert" style="display: none;">
+                            File successfully uploaded!
+                        </div>
+                        <p class="file-input">
+                            <input name="resource" value="" type="hidden">
+                        </p>
+                        <p class="file-name">
+                        </p>
+                        <div class="file-uploader">
+                            <noscript>
+                                <p>Please enable JavaScript to use file uploader.</p>
+                            </noscript>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                <form class="form" id="editObjectModal" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-8 form-group">
+                            <label for="edit-object-name-input">Name</label>
+                            <textarea class="form-control" id="edit-object-name-input"
+                               name="name"></textarea>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label for="edit-object-tense-input">Tense</label>
+                            <select id="edit-object-tense-input" name="tense" class="form-control">
+                                <option value="0">Future</option>
+                                <option value="1">Present</option>
+                                <option value="2">Past</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-object-description-input">Description</label>
+                        <textarea class="form-control" id="edit-object-description-input"
+                               placeholder="Description"
+                               rows="4"
+                               name="description"></textarea>
+                    </div>
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="public"> Public
+                        </label>
+                    </div>
+                    <div class="form-group file-form">
+                        <div  class="file-upload-success-message alert alert-success" role="alert" style="display: none;">
+                            File successfully uploaded!
+                        </div>
+                        <p class="file-input">
+                            <input name="resource" value="" type="hidden">
+                        </p>
+                        <p class="file-name">
+                        </p>
+                        <div class="file-uploader">
+                            <noscript>
+                                <p>Please enable JavaScript to use file uploader.</p>
+                            </noscript>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                <form class="form" id="realizeObjectModal" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-8 form-group">
+                            <label for="realize-object-name-input">Name</label>
+                            <textarea class="form-control" id="realize-object-name-input"
+                               name="name"></textarea>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label for="realize-object-tense-input">Tense</label>
+                            <select id="realize-object-tense-input" name="tense" class="form-control">
+                                <option value="0">Future</option>
+                                <option value="1">Present</option>
+                                <option value="2">Past</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="realize-object-description-input">Description</label>
+                        <textarea class="form-control" id="realize-object-description-input"
+                               placeholder="Description"
+                               rows="4"
+                               name="description"></textarea>
+                    </div>
+                    <div class="checkbox">
+                        <label>
+                            <input type="checkbox" name="public"> Public
+                        </label>
+                    </div>
+                    <div class="form-group file-form">
+                        <div  class="file-upload-success-message alert alert-success" role="alert" style="display: none;">
+                            File successfully uploaded!
+                        </div>
+                        <p class="file-input">
+                            <input name="resource" value="" type="hidden">
+                        </p>
+                        <p class="file-name">
+                        </p>
+                        <div class="file-uploader">
+                            <noscript>
+                                <p>Please enable JavaScript to use file uploader.</p>
+                            </noscript>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                <form class="form" id="importObjectModal" style="display: none;">
+                    <div class="form-group">
+                        <label for="import-object-name-input">Name</label>
+                        <input id="import-object-name-input" class="form-control" type="text" name="name"/>
+                    </div>
+                    <div class="form-group">
+                        <select id="select-object-import" name="resource" class="form-control">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                <form class="form" id="importTemplateModal" style="display: none;">
+                    <div class="form-group">
+                        <select id="import-template" name="template" class="form-control">
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                <form class="form" id="commentModal" style="display: none;">
+                    <div class="form-group">
+                        <label for="comment-name-input">Text</label>
+                        <input id="comment-name-input" class="form-control" type="text" name="name"/>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                <form class="form" id="editCommentModal" style="display: none;">
+                    <div class="form-group">
+                        <label for="edit-comment-name-input">Text</label>
+                        <input id="edit-comment-name-input" class="form-control" type="text" name="name"/>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                <form class="form" id="editActionModal" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-8 form-group">
+                            <label for="action-name-input">Name</label>
+                            <textarea id="action-name-input" class="form-control col-md-1" type="text"
+                               name="name"></textarea>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label for="action-tense-input">Tense</label>
+                            <select id="action-tense-input" name="tense" class="form-control">
+                                <option value="0">Future</option>
+                                <option value="1">Present</option>
+                                <option value="2">Past</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="action-description-input">Description</label>
+                        <textarea id="action-description-input" class="form-control" rows="4"
+                               name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="action-type-input">Operation Type</label>
+                        <select id="action-type-input" name="operation_type" class="form-control">
+                            <option value="In">Internal</option>
+                            <option value="Im">Import</option>
+                            <option value="Ex">Export</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                <form class="form" id="realizeActionModal" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-8 form-group">
+                            <label for="realize-action-name-input">Name</label>
+                            <textarea id="realize-action-name-input" class="form-control" type="text"
+                                   name="name"></textarea>
+                        </div>
+                        <div class="col-md-4 form-group">
+                            <label for="realize-action-tense-input">Tense</label>
+                            <select id="realize-action-tense-input" name="tense" class="form-control">
+                                <option value="1">Present</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="realize-action-description-input">Description</label>
+                        <textarea id="realize-action-description-input" class="form-control" rows="4"
+                               name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="realize-action-type-input">Operation Type</label>
+                        <select id="realize-action-type-input" name="operation_type" class="form-control">
+                            <option value="In">Internal</option>
+                            <option value="Im">Import</option>
+                            <option value="Ex">Export</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                <form class="form" id="exportObjectsModal" style="display: none;">
+                    <div class="form-group">
+                        <label for="export-objects-name-input">Exported Package Title</label>
+                        <textarea id="export-objects-name-input" class="form-control" type="text"
+                               name="name"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="export-objects-description-input">Exported Package Description</label>
+                        <textarea id="export-objects-description-input" class="form-control" rows="4"
+                               name="description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                <form class="form" id="editSwimLaneModal" style="display: none;">
+                    <div class="form-group">
+                        <label for="edit-swimlane-name-input">Title</label>
+                        <input id="edit-swimlane-name-input" class="form-control" disabled type="text"
+                               name="name"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="color_picker">Color</label>
+                        <input id="color_picker" name="color"/>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success">Ok</button>
+                    </div>
+                </form>
+                {% endverbatim %}
+            </div>
+        </span>
+    </div>
+{% endblock %}
+{% block extra_script %}
+    <script src="{% static 'js/robost.js' %}">
+    </script>
+{% endblock %}
+

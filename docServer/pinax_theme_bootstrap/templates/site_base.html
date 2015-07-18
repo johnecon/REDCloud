@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% block head_title %}{{ params.current }}{% endblock %}
+
+{% block nav %}
+<ul class="nav navbar-nav navbar-left">
+    <li><a href="{% url 'project_list' %}">Projects</a>
+</ul>
+
+{% endblock %}
+{%  block footer_base %}
+
+<div class="container" style="height:100%">
+    <hr>
+    <footer>
+        <p>&copy; Dtu, 2015</p>
+    </footer>
+</div>
+
+{% endblock %}

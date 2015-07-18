@@ -1,0 +1,36 @@
+{% extends 'site_base.html' %}
+{% load bootstrap_pagination %}
+{% block body %}
+    <p>
+        <a href={% url 'resource_add' %} target="_parent">
+            <button type="button" class="btn btn-primary">
+                <span class="glyphicon glyphicon-plus">
+                </span> Add New
+            </button>
+        </a>
+    </p>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>{{ object_name }}</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for object in object_list %}
+                <tr>
+                    <td>
+                        <a href="{{ object.get_absolute_url }}">{{ object }}</a>
+                    </td>
+                    <td>
+                        <a href="{{ object.get_update_url }}"><span class="glyphicon glyphicon-edit"></span> Edit</a>
+                        <a href="{{ object.get_delete_url }}"><span class="glyphicon glyphicon-trash"></span> Delete</a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% bootstrap_paginate page_obj %}
+    </div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends 'site_base.html' %}
+{% block metatags %}
+    <meta name="description" content="Version control has always been a tricky task, and even many CS students have serious trouble with the concepts involved. So how can we ask domain experts to be proficient users of a VCS? And even worse: for models, such as UML and requirements models, there are additional difficulties not encountered in classic version control approaches. One of the reasons there has been no break-through in this matter so far is that all of the previous attempts took the point of view of the VC system - not that of the user. In this project, we will try to develop a VCS, that focuses on modelers' activities, with a view to making version control of models a whole lot easier.">
+    <meta name="keywords" content="RED,Cloud,DTU,redcloud">
+{% endblock %}
+{% load staticfiles %}
+{% block extra_style %}
+    <link href="{% static "css/graph.css" %}" rel="stylesheet">
+{% endblock %}
