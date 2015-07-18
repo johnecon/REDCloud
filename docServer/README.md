@@ -25,11 +25,11 @@ python manage.py collectstatic
 ``` 
 * deploy using
 ```
-fab prod deploy
+fab deploy
 ```
 * deploy with migrations using
 ```
-fab prod deploy migrate
+fab deploy migrate
 ```
 
 # Dump Database #
@@ -84,7 +84,7 @@ restart app-uwsgi
 Use the ServerDockerfile
 ```
 fab prod build
-fab prod push:{message}
+fab push:{message}
 ```
 
 # Stress testing #
